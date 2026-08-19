@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Manifest & Mobile Theme Setup -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#00f0ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>NEON COMBO DROP</title>
+  
+  <!-- CrazyGames SDK v2 -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v2.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background: #09090e;
+      color: #ffffff;
+      font-family: 'Montserrat', 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #game-card {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      height: 640px;
+      border: 3px solid #00f0ff;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #11111d;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.35);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 10, 20, 0.92);
+      z-index: 10;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      color: #00f0ff;
+      text-shadow: 0 0 15px #00f0ff;
+      margin-bottom: 8px;
+    }
+    .subtext {
+      color: #ff007f;
+      font-weight: bold;
+      margin-bottom: 25px;
+      letter-spacing: 1px;
+    }
+    .score-badge {
+      font-size: 1.1rem;
+      color: #aaaaaa;
+      margin-bottom: 20px;
+    }
+    .score-badge span {
+      color: #00ff88;
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+    .btn {
+      background: linear-gradient(135deg, #ff007f, #7928ca);
+      border: none;
+      color: white;
+      padding: 14px 32px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255, 0, 127, 0.5);
+      margin: 8px 0;
+      transition: transform 0.1s, filter 0.2s;
+      width: 80%;
+    }
+    .btn:active {
+      transform: scale(0.96);
+    }
+    .btn-reward {
+      background: linear-gradient(135deg, #00ff88, #00b894);
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+      color: #000000;
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-card">
+  <!-- START SCREEN -->
+  <div id="start-screen" class="overlay">
+    <h1>NEON DROP</h1>
+    <div class="subtext">CATCH GEMS • BUILD COMBOS</div>
+    
+    <div class="score-badge">HIGH SCORE: <span id="high-score-start">0</span></div>
+
+    <p style="font-size:0.9rem; color:#8888aa; margin-bottom: 25px;">
+      ⚡ Drag paddle left/right.<br>
+      💎 Gems build streak multiplier.<br>
+      💣 Avoid Red Bombs!
+    </p>
+
+    <button class="btn" onclick="startGame()">PLAY GAME</button>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="gameover-screen" class="overlay hidden">
+    <h1 style="color:#ff0055; text-shadow:0 0 15px #ff0055;">GAME OVER</h1>
+    <div class="score-badge">FINAL SCORE: <span id="final-score">0</span></div>
+    <div class="score-badge">BEST SCORE: <span id="high-score-end">0</span></div>
+
+    <!-- Rewarded Ad Option for Extra Life -->
+    <button id="reward-btn" class="btn btn-reward" onclick="watchAdForExtraLife()">
+      📺 WATCH AD FOR +1 LIFE
+    </button>
+
+    <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+  </div>
+
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // UI Screens & Elements
+  const startScreen = document.getElementById('start-screen');
+  const gameoverScreen = document.getElementById('gameover-screen');
+  const highScoreStart = document.getElementById('high-score-start');
+  const highScoreEnd = document.getElementById('high-score-end');
+  const finalScoreTxt = document.getElementById('final-score');
+  const rewardBtn = document.getElementById('reward-btn');
+
+  // SDK Setup
+  let crazySDK = null;
+  window.addEventListener('load', () => {
+    if (window.CrazyGames && window.CrazyGames.SDK) {
+      crazySDK = window.CrazyGames.SDK;
+    }
+  });
+
+  // Sound Synth Engine (Pure Web Audio API - Zero External Dependencies)
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'gem') {
+      osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'bomb') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.3);
+    }
+  }
+
+  // Game States
+  let isPlaying = false;
+  let score = 0;
+  let combo = 1;
+  let streak = 0;
+  let highScore = localStorage.getItem('neon_combo_highscore') || 0;
+  highScoreStart.innerText = highScore;
+
+  let items = [];
+  let particles = [];
+  let spawnTimer = 0;
+  let fallSpeed = 3.5;
+  let animationId;
+
+  // Player Paddle
+  const player = {
+    x: 160,
+    y: 530,
+    w: 80,
+    h: 16,
+    color: '#00f0ff'
+  };
+
+  // Controls (Touch & Pointer Drag + Keyboard)
+  let isDragging = false;
+  canvas.addEventListener('pointerdown', (e) => { isDragging = true; updatePaddlePosition(e); });
+  canvas.addEventListener('pointermove', (e) => { if (isDragging) updatePaddlePosition(e); });
+  canvas.addEventListener('pointerup', () => { isDragging = false; });
+
+  function updatePaddlePosition(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    player.x = x - player.w / 2;
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') player.x -= 25;
+    if (e.key === 'ArrowRight') player.x += 25;
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+  });
+
+  // Particle Effects Generator
+  function createBurst(x, y, color) {
+    for (let i = 0; i < 12; i++) {
+      particles.push({
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6,
+        size: Math.random() * 4 + 2,
+        color: color,
+        life: 1
+      });
+    }
+  }
+
+  function spawnItem() {
+    const isBomb = Math.random() < 0.28; // 28% bomb spawn chance
+    items.push({
+      x: Math.random() * (canvas.width - 30) + 15,
+      y: -20,
+      radius: 12,
+      isBomb: isBomb,
+      color: isBomb ? '#ff0055' : '#00ff88'
+    });
+  }
+
+  function startGame() {
+    startScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
+    resetData();
+    isPlaying = true;
+    gameLoop();
+  }
+
+  function resetData() {
+    score = 0;
+    combo = 1;
+    streak = 0;
+    fallSpeed = 3.5;
+    items = [];
+    particles = [];
+    player.x = canvas.width / 2 - player.w / 2;
+  }
+
+  function gameOver() {
+    isPlaying = false;
+    cancelAnimationFrame(animationId);
+    playSound('bomb');
+
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('neon_combo_highscore', highScore);
+    }
+
+    finalScoreTxt.innerText = score;
+    highScoreEnd.innerText = highScore;
+    rewardBtn.classList.remove('hidden');
+    gameoverScreen.classList.remove('hidden');
+
+    // Trigger Midroll Ad on Game Over
+    if (crazySDK) {
+      crazySDK.ad.requestAd("midroll", {});
+    }
+  }
+
+  function watchAdForExtraLife() {
+    if (crazySDK) {
+      crazySDK.ad.requestAd("rewarded", {
+        adStarted: () => {},
+        adFinished: () => {
+          rewardBtn.classList.add('hidden');
+          gameoverScreen.classList.add('hidden');
+          isPlaying = true;
+          items = []; // Clear current bombs
+          gameLoop();
+        },
+        adError: () => { alert("Ad unavailable. Try restarting."); }
+      });
+    } else {
+      // Fallback for testing offline/local
+      rewardBtn.classList.add('hidden');
+      gameoverScreen.classList.add('hidden');
+      isPlaying = true;
+      items = [];
+      gameLoop();
+    }
+  }
+
+  function restartGame() {
+    startGame();
+  }
+
+  // MAIN LOOP
+  function gameLoop() {
+    if (!isPlaying) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Paddle
+    ctx.fillStyle = player.color;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = player.color;
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    // Spawn Items
+    spawnTimer++;
+    if (spawnTimer % 30 === 0) spawnItem();
+
+    // Update Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      let p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= 0.04;
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(p.life, 0);
+      ctx.fillRect(p.x, p.y, p.size, p.size);
+      ctx.globalAlpha = 1.0;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    // Update Items
+    for (let i = items.length - 1; i >= 0; i--) {
+      let item = items[i];
+      item.y += fallSpeed;
+
+      // Draw Item
+      ctx.fillStyle = item.color;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = item.color;
+      ctx.beginPath();
+      ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Check Paddle Collision
+      if (
+        item.y + item.radius >= player.y &&
+        item.y - item.radius <= player.y + player.h &&
+        item.x >= player.x &&
+        item.x <= player.x + player.w
+      ) {
+        if (!item.isBomb) {
+          playSound('gem');
+          createBurst(item.x, item.y, item.color);
+          streak++;
+          combo = Math.min(Math.floor(streak / 5) + 1, 5); // Multiplier ramps up every 5 catches
+          score += 10 * combo;
+          fallSpeed += 0.05; // Ramp up difficulty speed
+          items.splice(i, 1);
+        } else {
+          createBurst(item.x, item.y, item.color);
+          gameOver();
+          return;
+        }
+        continue;
+      }
+
+      // Missed Gem (Breaks Combo)
+      if (item.y > canvas.height) {
+        if (!item.isBomb) {
+          streak = 0;
+          combo = 1;
+        }
+        items.splice(i, 1);
+      }
+    }
+
+    ctx.shadowBlur = 0; // Reset Shadow Blur for UI Text
+
+    // Draw Score & Combo UI
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 20px Montserrat, sans-serif';
+    ctx.fillText(`SCORE: ${score}`, 20, 40);
+
+    ctx.fillStyle = combo > 1 ? '#ff007f' : '#aaaaaa';
+    ctx.fillText(`STREAK: ${combo}x`, 280, 40);
+
+    animationId = requestAnimationFrame(gameLoop);
+  }
+</script>
+<!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => console.log('PWA Service Worker registered:', reg.scope))
+          .catch((err) => console.error('PWA Registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
