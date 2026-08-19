@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Complete Asset Generator: Neon Combo Drop</title>
+  <style>
+    body {
+      background: #11111d;
+      color: #ffffff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+      margin: 0;
+    }
+    h1 { color: #00f0ff; margin-bottom: 5px; }
+    p.sub { color: #ff007f; font-weight: bold; margin-bottom: 30px; text-align: center; }
+    .asset-section {
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    .asset-label {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #00ff88;
+      display: block;
+      font-size: 1.1rem;
+    }
+    canvas {
+      border: 1px dashed #444444;
+      max-width: 90vw;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>NEON COMBO DROP</h1>
+  <p class="sub">Right-click each generated image and select "Save Image As..."</p>
+
+  <!-- 1. Original 512x512 Icon -->
+  <div class="asset-section">
+    <span class="asset-label">1. Original Icon (512x512) — icon-512.png</span>
+    <canvas id="icon512Canvas" width="512" height="512"></canvas>
+  </div>
+
+  <!-- 2. Original 1280x720 Banner -->
+  <div class="asset-section">
+    <span class="asset-label">2. Original Banner (1280x720) — banner-1280.png</span>
+    <canvas id="banner1280Canvas" width="1280" height="720"></canvas>
+  </div>
+
+  <hr style="width: 80%; border: 1px solid #333; margin-bottom: 40px;">
+
+  <!-- 3. CrazyGames Landscape 16:9 (1920x1080) -->
+  <div class="asset-section">
+    <span class="asset-label">3. CrazyGames Landscape 16:9 (1920x1080) — landscape-1920.png</span>
+    <canvas id="landscapeCanvas" width="1920" height="1080"></canvas>
+  </div>
+
+  <!-- 4. CrazyGames Portrait 2:3 (800x1200) -->
+  <div class="asset-section">
+    <span class="asset-label">4. CrazyGames Portrait 2:3 (800x1200) — portrait-1200.png</span>
+    <canvas id="portraitCanvas" width="800" height="1200"></canvas>
+  </div>
+
+  <!-- 5. CrazyGames Square 1:1 (800x800) -->
+  <div class="asset-section">
+    <span class="asset-label">5. CrazyGames Square 1:1 (800x800) — square-800.png</span>
+    <canvas id="squareCanvas" width="800" height="800"></canvas>
+  </div>
+
+<script>
+  window.addEventListener('load', () => {
+    drawIcon512();
+    drawBanner1280();
+    drawLandscape1920();
+    drawPortrait1200();
+    drawSquare800();
+  });
+
+  const theme = {
+    bg: '#11111d',
+    neon: '#00f0ff',
+    gem: '#00ff88',
+    bomb: '#ff0055'
+  };
+
+  // 1. ORIGINAL 512x512 ICON
+  function drawIcon512() {
+    const ctx = document.getElementById('icon512Canvas').getContext('2d');
+    ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, 512, 512);
+
+    ctx.fillStyle = theme.gem; ctx.shadowBlur = 40; ctx.shadowColor = theme.gem;
+    ctx.beginPath();
+    ctx.moveTo(256, 120); ctx.lineTo(392, 256); ctx.lineTo(256, 392); ctx.lineTo(120, 256);
+    ctx.closePath(); ctx.fill();
+
+    ctx.lineWidth = 10; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // 2. ORIGINAL 1280x720 BANNER
+  function drawBanner1280() {
+    const ctx = document.getElementById('banner1280Canvas').getContext('2d');
+    ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, 1280, 720);
+
+    drawDecorations(ctx, 1280, 720);
+
+    ctx.fillStyle = theme.neon; ctx.shadowBlur = 30; ctx.shadowColor = theme.neon;
+    ctx.font = 'bold 120px Montserrat, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('NEON', 640, 300);
+
+    ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 20; ctx.shadowColor = '#ffffff';
+    ctx.font = 'bold 70px Montserrat, sans-serif';
+    ctx.fillText('COMBO DROP', 640, 420);
+  }
+
+  // 3. CRAZYGAMES LANDSCAPE (1920x1080)
+  function drawLandscape1920() {
+    const ctx = document.getElementById('landscapeCanvas').getContext('2d');
+    ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, 1920, 1080);
+
+    drawDecorations(ctx, 1920, 1080);
+
+    ctx.fillStyle = theme.neon; ctx.shadowBlur = 45; ctx.shadowColor = theme.neon;
+    ctx.font = 'bold 180px Montserrat, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('NEON', 960, 450);
+
+    ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 30; ctx.shadowColor = '#ffffff';
+    ctx.font = 'bold 100px Montserrat, sans-serif';
+    ctx.fillText('COMBO DROP', 960, 630);
+  }
+
+  // 4. CRAZYGAMES PORTRAIT (800x1200)
+  function drawPortrait1200() {
+    const ctx = document.getElementById('portraitCanvas').getContext('2d');
+    ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, 800, 1200);
+
+    // Large central gem graphic
+    ctx.fillStyle = theme.gem; ctx.shadowBlur = 50; ctx.shadowColor = theme.gem;
+    ctx.beginPath();
+    ctx.moveTo(400, 250); ctx.lineTo(600, 450); ctx.lineTo(400, 650); ctx.lineTo(200, 450);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = theme.neon; ctx.shadowBlur = 35; ctx.shadowColor = theme.neon;
+    ctx.font = 'bold 100px Montserrat, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('NEON', 400, 850);
+
+    ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 20; ctx.shadowColor = '#ffffff';
+    ctx.font = 'bold 55px Montserrat, sans-serif';
+    ctx.fillText('COMBO DROP', 400, 940);
+  }
+
+  // 5. CRAZYGAMES SQUARE (800x800)
+  function drawSquare800() {
+    const ctx = document.getElementById('squareCanvas').getContext('2d');
+    ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, 800, 800);
+
+    ctx.fillStyle = theme.gem; ctx.shadowBlur = 50; ctx.shadowColor = theme.gem;
+    ctx.beginPath();
+    ctx.moveTo(400, 150); ctx.lineTo(600, 350); ctx.lineTo(400, 550); ctx.lineTo(200, 350);
+    ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = theme.neon; ctx.shadowBlur = 30; ctx.shadowColor = theme.neon;
+    ctx.font = 'bold 80px Montserrat, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('NEON DROP', 400, 680);
+  }
+
+  // Background floating gem & bomb dots
+  function drawDecorations(ctx, w, h) {
+    const dots = [
+      { x: w * 0.12, y: h * 0.2, color: theme.gem, r: 25 },
+      { x: w * 0.88, y: h * 0.2, color: theme.bomb, r: 20 },
+      { x: w * 0.18, y: h * 0.8, color: theme.bomb, r: 18 },
+      { x: w * 0.82, y: h * 0.8, color: theme.gem, r: 22 }
+    ];
+    dots.forEach(d => {
+      ctx.fillStyle = d.color; ctx.shadowBlur = 25; ctx.shadowColor = d.color;
+      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+  }
+</script>
+
+</body>
+</html>
